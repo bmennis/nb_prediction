@@ -9,6 +9,8 @@ include: "const.py"
    Do not store samples.
 """
 
+DBNSFP = 'Interpro_domain,SIFT_score,Polyphen2_HVAR_pred,RadialSVM_pred,LR_pred,Reliability_index,FATHMM_pred,MutationAssessor_pred,MutationTaster_pred,phyloP100way_vertebrate,phastCons100way_vertebrate'
+
 ###Begin with annotating snpeff output with dbsift
 rule annotateDbnsfp:
     input:  DATA_LOCAL + 'cgiMerge/allSampleCollapseVars.eff.vcf'
@@ -79,12 +81,14 @@ rule add_exac_vqsr:
     output: DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac/{chrom}'
     shell:  'python {OTHER_SCRIPTS}annExacFilterForModel.py {input} {output}'
 
+###This rule is in reference to frequency and filters on that frequency
 rule point_one_percent:
     input:  i = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac/{chrom}'
     output: o = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1per/{chrom}'
     run:
         apply_point_one_percent(input.i, output.o)
 
+###Cross reference vqsr and point one percent outputs
 rule rm_regions:
     input:  i = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1per/{chrom}'
     output: o = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion/{chrom}'
@@ -108,6 +112,7 @@ rule add_p:
     run:
         apply_p_or_lp(input.i, output.o, is_p, 'p')
 
+###Rule to merge pathogenic and likely pathogenic
 rule merge_p_lp:
     input:  expand(DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion_{x}/{{chrom}}', \
                    x = ('lp', 'p'))
@@ -181,5 +186,5 @@ rule uploadNaz:
         shell('touch {output}')
 
 
-###
+###The query actually is the final step of pipeline to get results of the predictions
 
