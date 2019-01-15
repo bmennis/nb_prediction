@@ -1,4 +1,5 @@
 include: "const.py"
+include: "sf_funcs.py"
 
 
 ###Pipeline begins with taking output from snpeff and preparing and building gemini from that output 
@@ -30,7 +31,7 @@ rule vcfanno:
                 -base-path {GEMINI_ANNO} -lua {input.lua} \
                 {input.conf} {input.vcf} > {output}"""
 
-###Fix header, need more info on step
+###Fix header, need more info on step what does {HEADER_HCKR} refer to?
 HEADER_FIX = 'eff_indel_splice,1,Flag AC,1,Integer AF,1,Float dbNSFP_FATHMM_pred,.,String dbNSFP_Interpro_domain,.,String dbNSFP_LR_pred,.,String dbNSFP_phyloP100way_vertebrate,.,String dbNSFP_phastCons100way_vertebrate,.,String dbNSFP_SIFT_score,.,String dbNSFP_Reliability_index,.,String dbNSFP_RadialSVM_pred,.,String dbNSFP_RadialSVM_pred,.,String dbNSFP_Polyphen2_HVAR_pred,.,String dbNSFP_MutationTaster_pred,.,String dbNSFP_MutationAssessor_pred,.,String'
 
 rule fixHeader:
@@ -188,3 +189,128 @@ rule uploadNaz:
 
 ###The query actually is the final step of pipeline to get results of the predictions
 
+
+###Including the matrix generation snakefile for pipeline, not entirely sure where this fits in the order
+###from original code file nb_convergence/sfCgiFull.py
+
+rule ls_missing_samples:
+    output: o = WORK + 'missing_cgi_no_vcf.tab'
+    run:
+        with open(output.o, 'w') as fout:
+            for sample in ALL_SAMPLES:
+                p = DATA_LOCAL + 'cgiMerge/allSampleVcf/{}.vcf'.format(sample)
+                #p = '/nas/nbl3/masterVarBeta/{}.tsv.bz2'.format(sample)
+                if not os.path.exists(p):
+                    print(sample, file=fout)
+
+#Unzip normalized vcf files of samples and chroms
+rule gunzipNormVcf:
+    input:  DATA_LOCAL + 'cgi/normalize/{sample}.{chrom}.vcf.gz'
+    output: DATA_LOCAL + 'cgi/normalize/{sample}.{chrom}.vcf'
+    shell:  'gunzip -c {input} > {output}'
+
+#Get depths from vcf files
+rule mkDepthVcfFull:
+    """List normal and tumor depths."""
+    input:  DATA_LOCAL + 'cgi/normalize/{sample}.{chrom}.vcf'
+    output: DATA_LOCAL + 'featuresDepthAllSamples/{sample}.{chrom}'
+    log:    LOG + 'featuresFull/{sample}.{chrom}.depths'
+    shell:  'python {SCRIPTS}mkDepthFromVcf.py {input} {output} &> {log}'
+
+rule collapseDepthVcf:
+    input:  DATA_LOCAL + 'featuresDepthAllSamples/{sample}.{chrom}'
+    output: DATA_LOCAL + 'featuresDepthAllSamplesCollapse/{sample}.{chrom}'
+    shell:  'python {SCRIPTS}collapseMvarDepths.py {input} {output}'
+
+def getSampleChroms(wc):
+    # chrom has no chr
+    return [ DATA_LOCAL + 'cgi/normalize/%s.%s.vcf' % (wc.sample, chrom)
+             for chrom in mkChroms(wc.sample) ]
+
+# for all pos, get no-calls
+rule catVarsFull:
+    input:  getSampleChroms
+    output: DATA_LOCAL + 'cgi/allSampleVarBed/{sample}.bed'
+    shell:  """cut -f 1,2 {input} | grep -v ^# | uniq | awk '{{print $1 "\\t" $2-1 "\\t" $2}}'| {SORT_BED} > {output}"""
+
+rule collapseFeatsAllSamples:
+    input:  DATA_LOCAL + 'cgi/noCallAllCounts',
+            DATA_LOCAL + 'featuresDepthAllSamplesCollapse/{sample}.{chrom}',
+    output: DATA_LOCAL + 'features/all_mat_sample_chrom/{sample}.{chrom}.mat'
+    shell:  'python {SCRIPTS}collapseFeaturesAllSamples.py {input} {output}'
+
+def mkAllFinal():
+    ls = []
+    for sample in ALL_SAMPLES:
+        for chrom in mkChroms(sample):
+            ls += [DATA_LOCAL + 'features/all_mat_sample_chrom/%s.%s.mat' % (sample, chrom)]
+    return ls # [x for x in ls if '.Y' in x]
+
+rule tmp:
+    input: DATA_LOCAL + 'features/all_mat_sample_chrom/TARGET-30-PAPKXS-10A-01D.11.mat'
+
+rule allCgi:
+    input: mkAllFinal() #expand(, sample=ALL_SAMPLES, chrom=CHROMS  )
+
+
+###Also including the prediction rules for the pipeline
+###from original code nb_convergence/sfPredict.py:
+"""Apply the models."""
+
+#Run decision tree prediction on snv and indel pickled trained models
+rule predict:
+    input:  DATA_LOCAL + 'features/all_mat_sample_chrom/{sample}.{chrom}.mat',
+            MODEL + 'snv/limitFeaturesyes.limitDatayes/tree.other.pickle',
+            MODEL + 'indel/limitFeaturesyes.limitDatayes/tree.other.pickle'
+    output: QUICK_DIR + 'scores/{sample}.{chrom}'
+    run:  
+        sex = 'F'
+        if wildcards.sample in ALL_MALE_SAMPLES:
+            sex = 'M'
+        shell('python {SCRIPTS}applyTreeNew.py {wildcards.chrom} {sex} {input} {output}')
+
+rule mkCalls:
+    input:  QUICK_DIR + 'scores/{sample}.{chrom}'
+    output: DATA_LOCAL + 'tmpCalls/{sample}.{chrom}'
+    shell:  'python {SCRIPTS}mkSampleChromTab.py {HOM_CUT} {VAR_CUT} {wildcards.chrom} {input} {output}'
+
+def mkAllFinal():
+    ls = []
+    for sample in ALL_SAMPLES:
+        for chrom in mkChroms(sample):
+            ls += [DATA_LOCAL + 'tmpCalls/%s.%s' % (sample, chrom)]
+    return ls
+
+def mkAllDbsFinal():
+    ls = []
+    for sample in ALL_SAMPLES:
+        for chrom in mkChroms(sample):
+            ls += [DATA_LOCAL + 'hdf5/%s.%s.hdf' % (sample, chrom)]
+    return ls
+
+
+rule allCgiScores:
+    input:  mkAllFinal()
+    output: DATA_LOCAL + 'varsWgsCgi.hdf'
+    run: 
+        varLs = 'varLs'
+        with open(varLs, 'w') as fout:
+            for afile in list(input):
+                print(afile, file=fout)
+        shell('python {SCRIPTS}mkHdfVars.py {varLs} {output}')        
+
+#Rule to make hdf5 database for sample and chromosome variant calls
+rule mkSampleChromDb:
+    input:  DATA_LOCAL + 'tmpCalls/{sample}.{chrom}'
+    output: DATA_LOCAL + 'hdf5/{sample}.{chrom}.hdf'
+    run:  
+        shell('wc -l {input} > {input}.tmp')
+        with open(list(input)[0] + '.tmp') as f:
+            rows = f.readline().split()[0]
+        shell('python {SCRIPTS}mkHdfVarsForSampleChrom.py {rows} {input} {output}')
+        shell('rm {input}.tmp')
+
+rule tmp:
+    input: mkAllDbsFinal() #DATA_LOCAL + 'hdf5/TARGET-30-PAPKXS-10A-01D.11.hdf'
+
+#rule mkVarDb

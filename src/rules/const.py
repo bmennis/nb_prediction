@@ -22,6 +22,7 @@ QUICK_DIR = '/mnt/isilon/diskin_lab/target_pe/nb_data/'
 #TARGET = 'nas/nbl3/'
 
 REF_FILE = '/mnt/isilon/maris_lab/target_nbl_ngs/shared_resources/refs/hg19_FA_UCSC/ucsc.hg19_no_chr.fa'
+VCFANNO_LUA_FILE = '/home/evansj/me/projects/me/vcfanno_lua/scripts/target.lua'
 CGI_VCF_HEADER = PWD + 'files/cgiVcfHeader'
 ANN_VCF_HEADER = PWD + 'files/vcfHeaderForAnn'
 NCI_VCF_HEADER = PWD + 'files/vcfHeaderForNci'
