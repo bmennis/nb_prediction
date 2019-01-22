@@ -1,4 +1,6 @@
-
+import os, sys, csv
+from sfConstInit import *
+from collections import defaultdict
 
 
 def fixVcfDel(inVcf, outVcf):
@@ -49,7 +51,7 @@ def getAllSamples():
 def loadMaleSamples():
     """Return normal and tumor samples with Y. (males)"""
     samples= {}
-    with open('/home/evansj/me/projects/diskin/target_meta/working/yStatus') as f:
+    with open('/mnt/isilon/diskin_lab/target_pe/target_meta/working/yStatus') as f:
         for line in f:
             sample, status = line.strip('\n').split('\t')
             if status == 'True':
@@ -71,7 +73,7 @@ def getAllNormalSamples():
                      'TARGET-50-PAKJGM-11A-01D',
                      'TARGET-10-PANYYV-10A-01D')
     sample2chrom = []
-    with open('/home/evansj/me/projects/diskin/target_meta/working/ntStatus') as f:
+    with open('/mnt/isilon/diskin_lab/target_pe/target_meta/working/ntStatus') as f:
         for line in f:
             sample, status = line.strip('\n').split('\t')
             if not sample in ignoreSamples and status == 'normal':
@@ -83,7 +85,7 @@ def getAllNormalSamplesNbl():
     ignoreSamples = ('PARJXH', 'PASCHP', 'PASYXM', 'PANYYV')
     sample2chrom = []
     nblSamples = loadSamplesByHist('NBL')
-    with open('/home/evansj/me/projects/diskin/target_meta/working/ntStatus') as f:
+    with open('/mnt/isilon/diskin_lab/target_pe/target_meta/working/ntStatus') as f:
         for line in f:
             sample, status = line.strip('\n').split('\t')
             if not sample in ignoreSamples and status == 'normal' and sample in nblSamples:
@@ -112,14 +114,14 @@ def getHg19Genes():
 
 def getNazGenes():
     genes = set()
-    with open('/home/evansj/me/projects/diskin/target_gene_ls/geneLs/naz.ls') as f:
+    with open('/mnt/isilon/diskin_lab/target_pe/target_gene_ls/geneLs/naz.ls') as f:
         for line in f:
             genes.add( line.strip() )
     return genes
 
 def getFavGenes():
     genes = set()
-    with open('/home/evansj/me/projects/diskin/target_gene_ls/geneLs/forEnrich') as f:
+    with open('/mnt/isilon/diskin_lab/target_pe/target_gene_ls/geneLs/forEnrich') as f:
         for line in f:
             genes.add( line.strip() )
     return genes
@@ -131,3 +133,19 @@ def mkGenesForRegression():
         for row in reader:
             genes[ row['gene'] ] = True
     return set(genes)
+
+def getAllNormalSamplesHaveDb():
+    """Return tumor and normal samples
+       Limited to samples w/ tumor files, need to get all tumor files.
+    """
+    df = pd.read_csv('/mnt/isilon/diskin_lab/target_pe/target_meta/docs/TARGET_GERMLINE_EXP.csv', sep=',')
+    crit = df.apply(lambda row: 
+                    row['Platform_s'] == 'COMPLETE_GENOMICS', axis=1)
+    cg = df[crit]
+    crit = cg.apply(lambda row: os.path.exists(DATA_LOCAL + 'hdf5bySample/{}.varsWgsCgi.hdf'.format(row['sample'])), axis=1)
+    return list(cg[crit]['sample'].values)
+
+def mkChroms(sample):
+    if sample in ALL_MALE_SAMPLES:
+        return CHROMS + ['Y']
+    return CHROMS

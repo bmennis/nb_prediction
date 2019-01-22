@@ -1,6 +1,6 @@
 include: "const.py"
-include: "sf_funcs.py"
-
+include: "sfFuncs.py"
+include: "sf_tools.py"
 
 ###Pipeline begins with taking output from snpeff and preparing and building gemini from that output 
 ###from original code /nb_convergence/sf_build_wgs_genimi.py:
@@ -14,7 +14,7 @@ DBNSFP = 'Interpro_domain,SIFT_score,Polyphen2_HVAR_pred,RadialSVM_pred,LR_pred,
 
 ###Begin with annotating snpeff output with dbsift
 rule annotateDbnsfp:
-    input:  DATA_LOCAL + 'cgiMerge/allSampleCollapseVars.eff.vcf'
+    input:  DATA + 'cgiMerge/allSampleCollapseVars.eff.vcf'
     output: DATA_LOCAL + 'cgiMerge/allSampleCollapseVars.eff.dbnsfp.vcf'
     threads: 20
     shell:  """{JAVA} -Xmx32g -Xms16g -jar {SIFT} dbnsfp -v \
@@ -69,7 +69,7 @@ rule all_gemini:
 # cg54 and esp
 rule query_gemini:
     input:  DATA_LOCAL + 'geminiDb/{chrom}.tgtCgiWgs.new.db'
-    output: DATA_DISKIN + 'wgsQueryNoPop/geminiQuery/{chrom}'
+    output: DATA_LOCAL + 'wgsQueryNoPop/geminiQuery/{chrom}'
     run:  
         QB = """query --header -q "select * from variants where cg54_ac is NULL and (kv_is_cgi is NULL or kv_is_cgi=0) """
         Q = QB + "and af_1kg_all<0.01 and af_esp_all<0.01"
@@ -79,27 +79,27 @@ rule query_gemini:
 rule add_exac_vqsr:
     input:  DATA_DISKIN + 'wgsQueryNoPop/geminiQuery/{chrom}',
             '/mnt/isilon/cbmi/variome/bin/gemini/data/gemini_data/ExAC.r0.3.sites.vep.tidy.vcf.gz'
-    output: DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac/{chrom}'
+    output: DATA_LOCAL + 'wgsQueryNoPop/geminiQueryFlagExac/{chrom}'
     shell:  'python {OTHER_SCRIPTS}annExacFilterForModel.py {input} {output}'
 
 ###This rule is in reference to frequency and filters on that frequency
 rule point_one_percent:
     input:  i = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac/{chrom}'
-    output: o = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1per/{chrom}'
+    output: o = DATA_LOCAL + 'wgsQueryNoPop/geminiQueryFlagExac1per/{chrom}'
     run:
         apply_point_one_percent(input.i, output.o)
 
 ###Cross reference vqsr and point one percent outputs
 rule rm_regions:
     input:  i = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1per/{chrom}'
-    output: o = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion/{chrom}'
+    output: o = DATA_LOCAL + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion/{chrom}'
     run:
         clean_cgi(input.i, output.o)
 
 rule add_lp:
     """Likely pathogenic. Splice moderate."""
     input:  i = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion/{chrom}'
-    output: o = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion_lp/{chrom}'
+    output: o = DATA_LOCAL + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion_lp/{chrom}'
     run:
         apply_p_or_lp(input.i, output.o, is_lp, 'lp')
 
@@ -109,7 +109,7 @@ rule add_lp:
 rule add_p:
     """Pathogenic"""
     input:  i = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion/{chrom}'
-    output: o = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion_p/{chrom}'
+    output: o = DATA_LOCAL + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion_p/{chrom}'
     run:
         apply_p_or_lp(input.i, output.o, is_p, 'p')
 
@@ -126,7 +126,7 @@ rule merge_p_lp:
 rule update_pathogenic:
     input:  i = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion_plp/{chrom}',
             h = '/home/evansj/me/projects/me/format_hgmd/docs/hgmd.collapse.tab'
-    output: o = DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion_plp_morep/{chrom}'
+    output: o = DATA_LOCAL + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion_plp_morep/{chrom}'
     run:
         update_p_and_lp(input.i, input.h, output.o)
 
@@ -139,14 +139,14 @@ RES_PY = '~/me/respublica/miniconda3/envs/cgi/bin/python'
 rule queryHdf_trio:
     input:  DATA_LOCAL + 'hdf5bySample/{sample}.varsWgsCgi.hdf',
             expand(DATA_DISKIN + 'wgsQueryNoPop/geminiQueryFlagExac1perRmRegion_plp_morep/{chrom}', chrom=CHROMS)
-    output: DATA_DISKIN + 'wgsQueryNoPop/hdf5QueryAll/{sample}'
+    output: DATA_LOCAL + 'wgsQueryNoPop/hdf5QueryAll/{sample}'
     threads: 12
     shell:  '{RES_PY} {SCRIPTS}pull_hdf_mp.py {wildcards.sample} {input} {output}'
 
 rule cat_hdf5:
     input: expand(DATA_DISKIN + 'wgsQueryNoPop/hdf5QueryAll/{sample}.use', \
                   sample=getAllNormalSamplesHaveDb())
-    output: DATA_DISKIN + 'wgsQueryNoPop/acc'
+    output: DATA_LOCAL + 'wgsQueryNoPop/acc'
     run:
         f = list(input)[0]
         shell('head -1 {f} > {output}')
@@ -310,7 +310,7 @@ rule mkSampleChromDb:
         shell('python {SCRIPTS}mkHdfVarsForSampleChrom.py {rows} {input} {output}')
         shell('rm {input}.tmp')
 
-rule tmp:
+rule tmp2:
     input: mkAllDbsFinal() #DATA_LOCAL + 'hdf5/TARGET-30-PAPKXS-10A-01D.11.hdf'
 
 #rule mkVarDb

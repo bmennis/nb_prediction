@@ -1,3 +1,12 @@
+### 2019_1_22
+* Pulled tools from perry tool file and directed to the correct directories and tools.
+* Started running snpsift rule successfully, awaiting completion.
+* Need to check where established part of pipeline ends to connect to this and what features if any are pulled.
+* If no features processed or pulled, need to add to pipeline to pull those which could take an amount of additional work.
+
+### 2019_1_14
+* Pulled more scripts from previous project and updated constant file getting ready to test run
+
 ### 2019_1_11 2
 * Seems as though the pipeline somewhat simultaneously predicts and creates hdf5 db while querying for the results
 * Important for plugging this pipeline in is what type of vcf files are needed for matrix creation and from snpeff

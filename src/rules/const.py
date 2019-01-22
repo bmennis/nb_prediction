@@ -1,7 +1,8 @@
-import os, sys
+import os, sys, csv
 import pandas as pd
 from sfConstInit import *
 from sfFuncs import *
+from collections import defaultdict
 
 p = os.getcwd()
 if 'src' in p:
@@ -9,14 +10,17 @@ if 'src' in p:
 else:
     PWD = p + '/'
 
+DATA_LOCAL = PWD + '/data/'
 WORK = PWD + 'work/'
 FILES = PWD + 'docs/'
-SCRIPTS = PWD + 'src/scripts/'
-DATA_LOCAL = PWD + 'data/'
+SCRIPTS = PWD + '/src/scripts/'
+DATA = '/mnt/isilon/diskin_lab/target_pe/nb_convergence/data/'
 LOG = PWD + 'log/'
 CONFIG = PWD + 'configs/'
 GEMINI_ANNO = '/mnt/isilon/cbmi/variome/bin/gemini/data/gemini_data'
+MODEL = PWD + 'models2/'
 
+DATA_DISKIN = '/mnt/isilon/diskin_lab/target_pe/nb_con_data/'
 DATA_QC = '/home/evansj/me/projects/diskin/target_qc/data/'
 QUICK_DIR = '/mnt/isilon/diskin_lab/target_pe/nb_data/'
 #TARGET = 'nas/nbl3/'
@@ -31,6 +35,7 @@ JUNK_PED = PWD + 'files/JUNK_PED.ped'
 INDEL_TYPES = ['D', 'TD', 'SI',] # INV
 CHROMS = list(range(1,23)) + ['X', 'M']
 CHROMS_NO_M = list(range(1,23)) + ['X']
+CHROMS_WITH_Y = CHROMS + ['Y']
 
 SAMPLES = getSamples() #['TARGET-30-PAPKXS', 'TARGET-30-PAPTAN', 'TARGET-30-PATFXV']
 ALL_SAMPLES = getAllNormalSamples()
