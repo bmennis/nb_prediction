@@ -1,11 +1,13 @@
 """Mk one feature matrix for sample and chrom.
    Use for all samples (not training).
 """
+###Adjusting const import was import sfConst, but trying just include: const.py
+include: "const.py"
 import argparse, csv, sys, os, pandas
 from functools import reduce
 PWD = os.getcwd().split('code')[0]
 sys.path.append(PWD + 'code/rules/')
-import sfConst
+
 
 # def loadData(dataFile):
 #     """Load {} of chrom:pos:ref:alt to fields."""

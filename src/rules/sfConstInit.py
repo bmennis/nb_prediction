@@ -8,7 +8,7 @@ PINDEL_DIR = '/mnt/isilon/diskin_lab/zalmanv/pindel_data/BI_WXS_244_SRA_pindel/'
 WG_WX_FILE = '/mnt/isilon/diskin_lab/target_pe/recover_trevor/working/wgAndExome.samples.ls'
 
 PWD = os.getcwd().split('code')[0]
-WORK = PWD + 'working/'
-SCRIPTS = PWD + 'code/scripts/'
+WORK = PWD + '/working/'
+SCRIPTS = PWD + '/src/scripts/'
 QC_SCRIPTS = '/nas/is1/perry/projects/diskin/target_qc/code/'
 
