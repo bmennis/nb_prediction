@@ -268,7 +268,7 @@ rule allCgi:
 
 #Run decision tree prediction on snv and indel pickled trained models
 rule predict:
-    input:  DATA + 'features/all_mat_sample_chrom/{sample}.{chrom}.mat',
+    input:  DATA_DISKIN + 'features/all_mat_sample_chrom/{sample}.{chrom}.mat',
             MODEL + 'snv/limitFeaturesyes.limitDatayes/tree.other.pickle',
             MODEL + 'indel/limitFeaturesyes.limitDatayes/tree.other.pickle'
     output: QUICK_DIR + 'scores/{sample}.{chrom}'

@@ -1,0 +1,120 @@
+all data
+             precision    recall  f1-score   support
+
+          0       0.93      0.98      0.96        98
+          1       0.99      0.95      0.97       152
+
+avg / total       0.97      0.96      0.96       250
+
+only indels
+             precision    recall  f1-score   support
+
+          0       1.00      1.00      1.00        25
+          1       1.00      1.00      1.00         5
+
+avg / total       1.00      1.00      1.00        30
+
+only snvs
+             precision    recall  f1-score   support
+
+          0       0.91      0.97      0.94        73
+          1       0.99      0.95      0.97       147
+
+avg / total       0.96      0.96      0.96       220
+
+all data
+             precision    recall  f1-score   support
+
+          0       0.96      0.95      0.95        98
+          1       0.97      0.97      0.97       152
+
+avg / total       0.96      0.96      0.96       250
+
+only indels
+             precision    recall  f1-score   support
+
+          0       1.00      1.00      1.00        17
+          1       1.00      1.00      1.00         4
+
+avg / total       1.00      1.00      1.00        21
+
+only snvs
+             precision    recall  f1-score   support
+
+          0       0.95      0.94      0.94        81
+          1       0.97      0.97      0.97       148
+
+avg / total       0.96      0.96      0.96       229
+
+all data
+             precision    recall  f1-score   support
+
+          0       0.95      0.95      0.95        98
+          1       0.97      0.97      0.97       152
+
+avg / total       0.96      0.96      0.96       250
+
+only indels
+             precision    recall  f1-score   support
+
+          0       0.96      0.96      0.96        28
+          1       0.80      0.80      0.80         5
+
+avg / total       0.94      0.94      0.94        33
+
+only snvs
+             precision    recall  f1-score   support
+
+          0       0.94      0.94      0.94        70
+          1       0.97      0.97      0.97       147
+
+avg / total       0.96      0.96      0.96       217
+
+all data
+             precision    recall  f1-score   support
+
+          0       0.97      0.94      0.95        98
+          1       0.96      0.98      0.97       152
+
+avg / total       0.96      0.96      0.96       250
+
+only indels
+             precision    recall  f1-score   support
+
+          0       1.00      1.00      1.00        20
+          1       1.00      1.00      1.00         3
+
+avg / total       1.00      1.00      1.00        23
+
+only snvs
+             precision    recall  f1-score   support
+
+          0       0.96      0.92      0.94        78
+          1       0.96      0.98      0.97       149
+
+avg / total       0.96      0.96      0.96       227
+
+all data
+             precision    recall  f1-score   support
+
+          0       0.93      0.97      0.95        98
+          1       0.98      0.95      0.97       152
+
+avg / total       0.96      0.96      0.96       250
+
+only indels
+             precision    recall  f1-score   support
+
+          0       1.00      1.00      1.00        20
+          1       1.00      1.00      1.00         4
+
+avg / total       1.00      1.00      1.00        24
+
+only snvs
+             precision    recall  f1-score   support
+
+          0       0.91      0.96      0.94        78
+          1       0.98      0.95      0.97       148
+
+avg / total       0.96      0.96      0.96       226
+
