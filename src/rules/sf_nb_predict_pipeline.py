@@ -267,11 +267,18 @@ rule allCgi:
 """Apply the models."""
 
 #Run decision tree prediction on snv and indel pickled trained models
+rule samp_mat:
+    input: DATA_DISKIN + 'features/all_mat_sample_chrom/{sample}.{chrom}.mat'
+    output: DATA + 'features/all_mat_sample_chrom_sample/{sample}.{chrom}.samp.mat'
+    run: 
+        shell('head -n 1 {input} > {output}')
+        shell('tail -n +2 {input} | shuf -n 1000 >> {output}')
+
 rule predict:
-    input:  DATA_DISKIN + 'features/all_mat_sample_chrom/{sample}.{chrom}.mat',
+    input:  DATA + 'features/all_mat_sample_chrom_sample/{sample}.{chrom}.samp.mat',
             MODEL + 'snv/limitFeaturesyes.limitDatayes/tree.other.pickle',
             MODEL + 'indel/limitFeaturesyes.limitDatayes/tree.other.pickle'
-    output: QUICK_DIR + 'scores/{sample}.{chrom}'
+    output: QUICK_DIR + 'scores/{sample}.{chrom}.samp'
     run:  
         sex = 'F'
         if wildcards.sample in ALL_MALE_SAMPLES:
@@ -279,22 +286,22 @@ rule predict:
         shell('python {SCRIPTS}applyTreeNew.py {wildcards.chrom} {sex} {input} {output}')
 
 rule mkCalls:
-    input:  QUICK_DIR + 'scores/{sample}.{chrom}'
-    output: DATA + 'tmpCalls/{sample}.{chrom}'
+    input:  QUICK_DIR + 'scores/{sample}.{chrom}.samp'
+    output: DATA + 'tmpCalls/{sample}.{chrom}.samp'
     shell:  'python {SCRIPTS}mkSampleChromTab.py {HOM_CUT} {VAR_CUT} {wildcards.chrom} {input} {output}'
 
 def mkAllFinal():
     ls = []
     for sample in ALL_SAMPLES:
         for chrom in mkChroms(sample):
-            ls += [DATA + 'tmpCalls/%s.%s' % (sample, chrom)]
+            ls += [DATA + 'tmpCalls/%s.%s.samp' % (sample, chrom)]
     return ls
 
 def mkAllDbsFinal():
     ls = []
     for sample in ALL_SAMPLES:
         for chrom in mkChroms(sample):
-            ls += [DATA + 'hdf5/%s.%s.hdf' % (sample, chrom)]
+            ls += [DATA + 'hdf5/%s.%s.samp.hdf' % (sample, chrom)]
     return ls
 
 
@@ -310,8 +317,8 @@ rule allCgiScores:
 
 #Rule to make hdf5 database for sample and chromosome variant calls
 rule mkSampleChromDb:
-    input:  DATA + 'tmpCalls/{sample}.{chrom}'
-    output: DATA + 'hdf5/{sample}.{chrom}.hdf'
+    input:  DATA + 'tmpCalls/{sample}.{chrom}.samp'
+    output: DATA + 'hdf5/{sample}.{chrom}.samp.hdf'
     run:  
         shell('wc -l {input} > {input}.tmp')
         with open(list(input)[0] + '.tmp') as f:
