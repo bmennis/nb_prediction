@@ -3,6 +3,8 @@ nb_prediction
 
 organize nb decision tree
 
+To run use run.sh script which is set to decision tree prediction rule execution. The rules for decision tree prediction are located in src/rules/sf_nb_prediction.py and pathways for data are located in constant file src/rules/const.py.  The run.sh script can be edited to run additional pipeline rules, by filling in the name of the rules.
+
 Project Organization
 ------------
 
